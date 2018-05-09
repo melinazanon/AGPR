@@ -33,11 +33,6 @@ app.use(session({
 	saveUnitialized:true
 }));
 
-app.get('/sessionSetzen', function(req,res){
-	
-	req.session['sessionValue']= Math.floor(Math.random(100)*100);
-	res.redirect('/onProfile');
-});
 
 app.get('/sessionLoeschen', function(req,res){
 	
@@ -86,7 +81,8 @@ app.post('/onLogin', function(req, res){
 		else{
 			console.log(row.password);
 			if(password==row.password){
-				res.redirect('/sessionSetzen');
+				req.session['sessionValue']= Math.floor(Math.random(100)*100);
+				res.redirect('/onProfile?valid='+user);
 			}
 			else{
 				res.redirect('/error');
@@ -96,9 +92,11 @@ app.post('/onLogin', function(req, res){
 	
 });
 
-app.get('/onProfile', (req, res) => {
+app.get('/onProfile', (req, res, user) => {
+	var user = req.query.valid;
+	console.log(user);
 	if(req.session['sessionValue']){
-		res.render('profil');
+		res.render('profil',{ 'user': user});
 	}
 	else{
 		res.render('error');
