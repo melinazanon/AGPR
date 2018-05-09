@@ -39,11 +39,17 @@ app.get('/sessionLoeschen', function(req,res){
 	delete req.session['sessionValue'];
 	res.redirect('/');
 });
-
+let message ="";
 
 app.get('/', function (req,res){
+	message = req.query.valid;
+	console.log(message);
 	
-	res.render('anmelden');
+	res.render('anmelden', {'message' : message});
+	
+	db.all(`SELECT * FROM users`,function(error,rows){
+		console.log(rows);
+	});
 
 });
 
@@ -60,17 +66,37 @@ app.get('/error', (req, res) => {
 app.post('/onNewUser', function(req, res){
 	const user = req.body["userName"];
 	const password = req.body["password"];
-	
-	const sql = `INSERT INTO users (user,password) VALUES ('${user}', '${password}')`;
-	console.log(sql);
-	db.run(sql, function(err){
-		res.redirect('/sessionSetzen');
+	const sql1 =`SELECT user FROM users WHERE user='${user}'`;
+	let newUser= true;
+	db.get(sql1,(error,row)=>{
+		if(error){
+			console.log(error.massage);
+			
+		}
+		else{
+			if(row != null){
+				console.log(row.user);
+				newUser= false;
+				res.redirect('/?valid='+'Benutzername existiert bereits');
+			}
+			if(newUser==true){
+				const sql = `INSERT INTO users (user,password) VALUES ('${user}', '${password}')`;
+				console.log(sql);
+				db.run(sql, function(err){
+					req.session['sessionValue']= Math.floor(Math.random(100)*100);
+					res.redirect('/onProfile?valid='+user);
+				});
+			}
+		}
 	});
+	
+	
 });
 
 app.post('/onLogin', function(req, res){
 	const user = req.body["user"];
 	const password = req.body["password"];
+	
 	
 	const sql = `SELECT password FROM users WHERE user ='${user}'`;
 	console.log(sql);
@@ -94,7 +120,6 @@ app.post('/onLogin', function(req, res){
 
 app.get('/onProfile', (req, res, user) => {
 	var user = req.query.valid;
-	console.log(user);
 	if(req.session['sessionValue']){
 		res.render('profil',{ 'user': user});
 	}
